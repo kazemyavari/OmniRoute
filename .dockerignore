@@ -32,6 +32,7 @@ logs
 .env.development.local
 .env.test.local
 .env.production.local
+.env.chatone
 
 # Debug logs
 npm-debug.log*
@@ -108,6 +109,7 @@ bun.lock
 .gemini
 .claude
 .source
+_tasks
 
 # Misc
 llm.txt

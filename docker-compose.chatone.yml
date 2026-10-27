@@ -1,0 +1,29 @@
+name: chatone-omniroute
+services:
+  omniroute:
+    image: ${CHATONE_OMNIROUTE_IMAGE:?Set an immutable ChatOne image tag}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner-base
+      args:
+        OMNIROUTE_USE_TURBOPACK: "0"
+        OMNIROUTE_BUILD_MEMORY_MB: "4096"
+        OMNIROUTE_BUILD_WORKERS: "2"
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${CHATONE_OMNIROUTE_PORT:-20129}:20128"
+    environment:
+      NODE_ENV: production
+      PORT: "20128"
+      HOSTNAME: "0.0.0.0"
+      DATA_DIR: /app/data
+      REQUIRE_API_KEY: "true"
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in the local env file}
+      API_KEY_SECRET: ${API_KEY_SECRET:?Set API_KEY_SECRET in the local env file}
+      INITIAL_PASSWORD: ${INITIAL_PASSWORD:?Set a local initial admin password}
+      NEXT_TELEMETRY_DISABLED: "1"
+    volumes:
+      - data:/app/data
+volumes:
+  data:

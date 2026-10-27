@@ -315,7 +315,9 @@
     "i18n:translate-new-keys": "bash scripts/i18n/translate-new-keys.sh",
     "i18n:check-keys": "node scripts/i18n/check-key-completeness.mjs",
     "i18n:check-keys:cli": "node scripts/i18n/check-key-completeness.mjs --catalog=cli",
-    "check:free-catalog-evidence": "node scripts/check/check-free-catalog-evidence.mjs"
+    "check:free-catalog-evidence": "node scripts/check/check-free-catalog-evidence.mjs",
+    "check:chatone": "node scripts/check/check-chatone-fork.mjs",
+    "test:chatone": "node --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=2 tests/unit/chatone-responses-citations.test.ts tests/unit/chatone-image-evidence.test.ts tests/unit/response-sanitizer.test.ts tests/unit/responses-transformer.test.ts tests/unit/responses-transformer-dense-output.test.ts tests/unit/responses-transformer-tail-drain.test.ts tests/unit/responses-usage-trailing-6906.test.ts tests/unit/translator-openai-responses-post-toolcall-content.test.ts tests/unit/image-generation-fetch-timeout.test.ts tests/unit/10197-openrouter-image-edits-route.test.ts"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "1.4.0",
