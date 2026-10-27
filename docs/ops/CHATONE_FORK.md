@@ -37,10 +37,15 @@ npm run typecheck:core
 npm run test:unit
 npm run test:vitest
 docker build --target runner-base \
-  --build-arg OMNIROUTE_BUILD_MEMORY_MB=4096 \
+  --build-arg OMNIROUTE_BUILD_MEMORY_MB=6144 \
   --build-arg OMNIROUTE_BUILD_WORKERS=2 \
   -t "chatone/omniroute:$(git rev-parse --short=12 HEAD)" .
 ```
+
+Build on a host with at least 16 GB RAM. The 6144 MB heap and one page-data
+worker follow the upstream Docker defaults; a 4096 MB override exhausted the
+webpack production optimizer during fork verification. Runtime memory settings
+are separate from this build budget.
 
 The base image is pinned by digest and application dependencies by lockfile.
 Upstream's Dockerfile still installs OS updates and some tools at build time;

@@ -42,7 +42,7 @@ jobs:
       - name: Build the committed source; never deploy or publish automatically
         run: >-
           docker build --target runner-base
-          --build-arg OMNIROUTE_BUILD_MEMORY_MB=4096
+          --build-arg OMNIROUTE_BUILD_MEMORY_MB=6144
           --build-arg OMNIROUTE_BUILD_WORKERS=2
           --label org.opencontainers.image.revision=${{ github.sha }}
           -t chatone/omniroute:${{ github.sha }} .
