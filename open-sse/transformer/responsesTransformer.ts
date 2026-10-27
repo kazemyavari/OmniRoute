@@ -1,4 +1,9 @@
 import { appendToolCallArgumentDelta } from "../utils/toolCallArguments.ts";
+import {
+  beginResponseCitationMessage,
+  collectResponseAnnotations,
+  responseAnnotations,
+} from "../utils/responseAnnotations.ts";
 import { ToolCallLifecycle } from "../translator/response/openai-responses/toolCallLifecycle.ts";
 import { shouldParseTextualReasoningTags } from "../handlers/responseSanitizer.ts";
 import { getReadableReasoningValue } from "../utils/reasoningFields.ts";
@@ -224,6 +229,8 @@ export function createResponsesApiTransformStream(
     created: Math.floor(Date.now() / 1000),
     started: false,
     msgTextBuf: {},
+    responseAnnotations: {} as Record<number, Record<string, unknown>[]>,
+    citationMessageIndex: undefined as number | undefined,
     msgItemAdded: {},
     msgContentAdded: {},
     msgItemDone: {},
@@ -423,13 +430,25 @@ export function createResponsesApiTransformStream(
         item_id: msgId,
         output_index: normalizedIndex,
         content_index: 0,
-        part: { type: "output_text", annotations: [], logprobs: [], text: fullText },
+        part: {
+          type: "output_text",
+          annotations: responseAnnotations(state, idx),
+          logprobs: [],
+          text: fullText,
+        },
       });
 
       const msgItem = {
         id: msgId,
         type: "message",
-        content: [{ type: "output_text", annotations: [], logprobs: [], text: fullText }],
+        content: [
+          {
+            type: "output_text",
+            annotations: responseAnnotations(state, idx),
+            logprobs: [],
+            text: fullText,
+          },
+        ],
         role: "assistant",
         status: "completed",
       };
@@ -826,6 +845,7 @@ export function createResponsesApiTransformStream(
                 if (!content) continue;
 
                 if (!state.msgItemAdded[msgIdx]) {
+                  beginResponseCitationMessage(state, msgIdx);
                   state.msgItemAdded[msgIdx] = true;
                   const msgId = `msg_${state.responseId}_${msgIdx}`;
 
@@ -868,6 +888,8 @@ export function createResponsesApiTransformStream(
               }
             }
           }
+
+          collectResponseAnnotations(state, delta.annotations);
 
           // Handle tool_calls
           if (delta.tool_calls?.length) {

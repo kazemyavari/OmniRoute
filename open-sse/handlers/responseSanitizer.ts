@@ -1,3 +1,4 @@
+import { normalizeResponseAnnotations } from "../utils/responseAnnotations.ts";
 import {
   copyOpenAICompatibleReasoningFields,
   getReadableReasoningValue,
@@ -954,6 +955,13 @@ function convertOpenAIResponseToResponses(openaiResponse: JsonRecord): JsonRecor
 
   const hasToolCalls = Array.isArray(message.tool_calls) && message.tool_calls.length > 0;
   const messageContent = sanitizeResponsesMessageContent(message.content);
+  const textPart = messageContent.find((part) => part.type === "output_text");
+  if (textPart && Array.isArray(message.annotations)) {
+    textPart.annotations = normalizeResponseAnnotations([
+      ...(Array.isArray(textPart.annotations) ? textPart.annotations : []),
+      ...message.annotations,
+    ]);
+  }
   if (messageContent.length > 0 || (!hasToolCalls && !reasoningContent)) {
     output.push({
       id: `msg_${responseId}_0`,

@@ -3,6 +3,11 @@
  * Converts streaming chunks from Chat Completions to Responses API events
  */
 import { register } from "../registry.ts";
+import {
+  beginResponseCitationMessage,
+  collectResponseAnnotations,
+  responseAnnotations,
+} from "../../utils/responseAnnotations.ts";
 import { FORMATS } from "../formats.ts";
 import { appendToolCallArgumentDelta } from "../../utils/toolCallArguments.ts";
 import { translatorToolCallLifecycle } from "./openai-responses/toolCallLifecycle.ts";
@@ -361,6 +366,8 @@ export function openaiToOpenAIResponsesResponse(chunk, state) {
     }
   }
 
+  collectResponseAnnotations(state, delta.annotations);
+
   // Handle tool_calls
   if (delta.tool_calls?.length) {
     // Close reasoning first so tool calls do not collide with an open
@@ -515,6 +522,7 @@ function emitTextContent(state, emit, idx, content) {
     idx = nextFreeMessageIndex(state, idx);
   }
   if (!state.msgItemAdded[idx]) {
+    beginResponseCitationMessage(state, idx);
     state.msgItemAdded[idx] = true;
     const msgId = `msg_${state.responseId}_${idx}`;
 
@@ -571,13 +579,25 @@ function closeMessage(state, emit, idx) {
       item_id: msgId,
       output_index: normalizedIndex,
       content_index: 0,
-      part: { type: "output_text", annotations: [], logprobs: [], text: fullText },
+      part: {
+        type: "output_text",
+        annotations: responseAnnotations(state, idx),
+        logprobs: [],
+        text: fullText,
+      },
     });
 
     const msgItem = {
       id: msgId,
       type: "message",
-      content: [{ type: "output_text", annotations: [], logprobs: [], text: fullText }],
+      content: [
+        {
+          type: "output_text",
+          annotations: responseAnnotations(state, idx),
+          logprobs: [],
+          text: fullText,
+        },
+      ],
       role: "assistant",
       status: "completed",
     };
