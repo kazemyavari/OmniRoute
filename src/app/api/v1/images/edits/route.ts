@@ -1,3 +1,4 @@
+import { imageEndpointResponse as jsonResponse } from "@omniroute/open-sse/handlers/imageGeneration/httpResponse.ts";
 import {
   handleAdobeFireflyImageGeneration,
   handleCodexImageEdit,
@@ -204,13 +205,6 @@ async function readEditInput(request: Request): Promise<EditInput | null> {
     }
   }
   return null;
-}
-
-function jsonResponse(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
 }
 
 /** Key + start time every edit attempt is attributed to (call_logs + usage_history). */

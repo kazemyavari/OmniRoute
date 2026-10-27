@@ -74,7 +74,7 @@ async function readImageResponse(
       ),
     };
   }
-  return buildImageEndpointSuccess(data, items);
+  return buildImageEndpointSuccess(data, items, response.headers);
 }
 
 /** Map a failed image fetch (network error, header/body deadline) to a 502/504 result. */
