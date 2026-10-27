@@ -123,3 +123,40 @@ test("ChatOne citation normalization supports flat sources and keeps stable mess
   assert.deepEqual(responseAnnotations(state, 2), []);
   assert.equal(snapshot, responseAnnotations(state, 1));
 });
+
+test("ChatOne pending citations follow the first text message after reasoning", async () => {
+  const items = [
+    chunk({ reasoning_content: "Thinking" }),
+    chunk({ annotations: [citation("https://pending.example")] }),
+    chunk({ content: "Answer" }),
+    chunk({}, "stop"),
+  ];
+  const state = initState(FORMATS.OPENAI_RESPONSES);
+  const translated = items.flatMap((item) => openaiToOpenAIResponsesResponse(item, state));
+  translated.push(...openaiToOpenAIResponsesResponse(null, state));
+  const message = translated
+    .find((event) => event.event === "response.completed")
+    ?.data.response.output.find((item: { type: string }) => item.type === "message");
+  assert.equal(message.content[0].annotations[0]?.url, "https://pending.example");
+  const encoder = new TextEncoder();
+  const input = new ReadableStream({
+    start(controller) {
+      for (const item of items)
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(item)}\n\n`));
+      controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+      controller.close();
+    },
+  });
+  const output = await new Response(
+    input.pipeThrough(createResponsesApiTransformStream(null, 0))
+  ).text();
+  const completed = output
+    .split("\n")
+    .filter((line) => line.startsWith("data: {"))
+    .map((line) => JSON.parse(line.slice(6)))
+    .find((event) => event.type === "response.completed");
+  const streamedMessage = completed.response.output.find(
+    (item: { type: string }) => item.type === "message"
+  );
+  assert.equal(streamedMessage.content[0].annotations[0]?.url, "https://pending.example");
+});

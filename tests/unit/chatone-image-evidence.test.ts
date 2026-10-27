@@ -95,3 +95,20 @@ test("ChatOne image metadata uses explicit evidence and rejects invalid header i
     assert.equal(unknown.data.usage, undefined);
   }
 });
+
+test("ChatOne zero placeholders do not mask positive image cost evidence", () => {
+  assert.equal(
+    imageEndpointResponse({ usage: { total_cost: 0, cost: 0.125 } }).headers.get(
+      "x-omniroute-response-cost"
+    ),
+    "0.125"
+  );
+  const result = buildImageEndpointSuccess(
+    { usage: { total_cost: 0 } },
+    [],
+    new Headers({ "x-omniroute-response-cost": "0.25" })
+  );
+  assert.equal(result.data.usage?.total_cost, 0.25);
+  assert.equal(result.data.usage?.provider_reported_total_cost, 0);
+  assert.equal(imageEndpointResponse(result.data).headers.get("x-omniroute-response-cost"), "0.25");
+});

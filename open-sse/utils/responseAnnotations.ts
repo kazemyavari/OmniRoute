@@ -2,6 +2,7 @@ type Annotation = Record<string, unknown>;
 type CitationState = {
   responseAnnotations?: Record<number, Annotation[]>;
   citationMessageIndex?: number;
+  pendingResponseAnnotations?: Annotation[];
 };
 
 /** Chat Completions nests URL citations; Responses exposes their fields directly. */
@@ -32,13 +33,21 @@ export function responseAnnotations(state: CitationState, index: number): Annota
 }
 
 export function beginResponseCitationMessage(state: CitationState, index: number): void {
+  if (state.citationMessageIndex === undefined && state.pendingResponseAnnotations?.length) {
+    const annotations = responseAnnotations(state, index);
+    annotations.push(...state.pendingResponseAnnotations);
+    state.pendingResponseAnnotations = undefined;
+  }
   state.citationMessageIndex = index;
   responseAnnotations(state, index);
 }
 
 export function collectResponseAnnotations(state: CitationState, items: unknown): void {
   if (!Array.isArray(items) || items.length === 0) return;
-  const annotations = responseAnnotations(state, state.citationMessageIndex ?? 0);
+  const annotations =
+    state.citationMessageIndex === undefined
+      ? (state.pendingResponseAnnotations ??= [])
+      : responseAnnotations(state, state.citationMessageIndex);
   const merged = normalizeResponseAnnotations([...annotations, ...items]);
   // Completed output items retain this array. Late annotation-only chunks must update
   // that snapshot without leaking the first message's sources into the next message.

@@ -20,6 +20,13 @@ export type ImageEndpointResult =
   | ImageEndpointSuccess
   | { success: false; status: number; error: string; data?: never; usage?: never };
 
+export function positiveImageCost(value: unknown): number | undefined {
+  if (typeof value !== "number" && typeof value !== "string") return undefined;
+  if (!String(value).trim()) return undefined;
+  const cost = Number(value);
+  return Number.isFinite(cost) && cost > 0 ? cost : undefined;
+}
+
 function evidenceId(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   const id = value.trim();
@@ -36,14 +43,10 @@ export function buildImageEndpointSuccess(
   for (const key of ["cost", "response_cost", "total_cost", "prompt_cost", "completion_cost"]) {
     if (usage[key] == null && data[key] != null) usage[key] = data[key];
   }
-  const headerCost = headers?.get("x-omniroute-response-cost");
-  if (
-    headerCost?.trim() &&
-    Number.isFinite(Number(headerCost)) &&
-    Number(headerCost) > 0 &&
-    usage.total_cost == null
-  ) {
-    usage.total_cost = Number(headerCost);
+  const headerCost = positiveImageCost(headers?.get("x-omniroute-response-cost"));
+  if (headerCost !== undefined && positiveImageCost(usage.total_cost) === undefined) {
+    if (usage.total_cost !== undefined) usage.provider_reported_total_cost = usage.total_cost;
+    usage.total_cost = headerCost;
   }
   const generation =
     evidenceId(headers?.get("x-openrouter-generation-id")) ||

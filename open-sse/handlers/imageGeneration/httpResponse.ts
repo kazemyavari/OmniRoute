@@ -1,4 +1,5 @@
 import { isJsonObject } from "../../utils/kieTask.ts";
+import { positiveImageCost } from "./result.ts";
 
 /** Expose evidence already carried by the image payload; never estimate a missing cost. */
 export function imageEndpointResponse(data: unknown, status = 200): Response {
@@ -14,13 +15,10 @@ export function imageEndpointResponse(data: unknown, status = 200): Response {
       }
     }
     const usage = isJsonObject(data.usage) ? data.usage : {};
-    const cost = usage.total_cost ?? usage.cost ?? usage.response_cost;
-    if (
-      (typeof cost === "number" || typeof cost === "string") &&
-      String(cost).trim() &&
-      Number.isFinite(Number(cost)) &&
-      Number(cost) > 0
-    ) {
+    const cost = [usage.total_cost, usage.cost, usage.response_cost]
+      .map(positiveImageCost)
+      .find((value) => value !== undefined);
+    if (cost !== undefined) {
       headers.set("x-omniroute-response-cost", String(cost));
     }
   }
